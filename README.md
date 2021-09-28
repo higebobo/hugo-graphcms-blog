@@ -30,6 +30,7 @@ git init
 echo '*~' >> .gitignore
 echo '*.bak' >> .gitignore
 echo '*.orig' >> .gitignore
+echo '*.pyc' >> .gitignore
 echo '.env' >> .gitignore
 echo 'public' >> .gitignore
 echo 'resources' >> .gitignore
@@ -52,3 +53,11 @@ cp -pr themes/blonde/exampleSite/config.toml .
 ```shell
 hugo serve
 ```
+
+## Create document
+
+```shell
+python -m app <options>
+```
+
+see the options with `python -m app --help`
