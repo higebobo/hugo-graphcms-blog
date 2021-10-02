@@ -1,6 +1,8 @@
 *~
 *.bak
 *.orig
+*.pyc
 .env
+__pycache__
 public
 resources

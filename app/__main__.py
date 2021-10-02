@@ -1,52 +1,112 @@
-#!/usr/bin/env python
 # -*- mode: python -*- -*- coding: utf-8 -*-
-import argparse
-import datetime
+import json
 import os
+import pathlib
+import re
+import urllib.request
 
-ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-CONTENT_DIR = os.path.join(ROOT_DIR, 'content', 'post')
+from dotenv import load_dotenv
 
-def check_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--title', default='My Post', help='blog title')
-    parser.add_argument('-i', '--image', help='featured image')
-    parser.add_argument('--tags', help='blog tags')
+APP_DIR = os.path.abspath(os.path.dirname(__file__))
+PROJECT_DIR = pathlib.Path(APP_DIR).parent
+HUGO_CONTENT_DIR = os.path.join(PROJECT_DIR, 'content', 'post')
 
-    return parser.parse_args()
+dotenv_path = os.path.join(PROJECT_DIR, '.env')
+load_dotenv(dotenv_path)
 
-def main(content_dir=CONTENT_DIR):
-    args = check_args()
-    now = datetime.datetime.now()
-    timestamp = now.strftime('%Y%m%dT%H%M%S')
-    # ファイル名をタイムスタンプで生成
-    filepath = os.path.join(content_dir, f'{timestamp}.md')
-    if os.path.exists(filepath):
-        # 同一ファイル名が存在する場合は終了
-        print(f'{filepath} is exists')
+
+class GraphcmsManager(object):
+    def __init__(self, endpoint, token):
+        self.endpoint = endpoint
+        self.headers = {'Authorization': f'Bearer {token}'}
+
+    def __format_query(self, s):
+        s = re.sub(r'\s+', '' ' ', s).replace('\n', ' ')
+        return {'query': f'{s}'}
+
+    def __query_statement(self):
+        return '''\
+        {
+          posts {
+            id
+            title
+            slug
+            date
+            eyecatch {
+              url
+            }
+            body
+            tag
+          }
+        }'''
+
+    def query(self, data=None, is_raw=True):
+        if not data:
+            data = self.__query_statement()
+        if is_raw:
+            data = self.__format_query(data)
+
+        req = urllib.request.Request(self.endpoint,
+                                     data=json.dumps(data).encode(),
+                                     headers=self.headers)
+        status_code = 500
+        try:
+            with urllib.request.urlopen(req) as response:
+                payload = json.loads(response.read())
+                status_code = response.getcode()
+        except urllib.error.HTTPError as e:
+            payload = {'error': e.reason}
+        except urllib.error.URLError as e:
+            payload = {'error': e.reason}
+        except Exception as e:
+            payload = {'error': str(e)}
+        return status_code, payload
+
+    def gen_hugo_contents(self, payload):
+        result = list()
+
+        data = (payload.get('data'))
+        for model, content_list in data.items():
+            for x in content_list:
+                data_map = dict()
+                front_matter = f'title: "{x["title"]}"\n'
+                front_matter = f'slug: "{x["slug"]}"\n'
+                front_matter += f'date: {x["date"]}\n'
+                eyecatch = x.get('eyecatch')
+                if eyecatch:
+                    front_matter += f'featured_image: {eyecatch["url"]}\n'
+                tag = x.get('tag')
+                if tag:
+                    front_matter += f'tags: {str(tag)}\n'
+
+                data_map['front_matter'] = front_matter
+                data_map['body'] = x['body']
+                data_map['filepath'] = f'{x["id"]}.md'
+
+                result.append(data_map)
+        return result
+
+    def write(self, data):
+        for x in data:
+            fullpath = os.path.join(HUGO_CONTENT_DIR, x['filepath'])
+            os.makedirs(os.path.dirname(fullpath), exist_ok=True)
+
+            with open(fullpath, 'w') as f:
+                text = f'---\n{x["front_matter"]}---\n{x["body"]}'
+                f.write(text)
+
+
+def main():
+    endpoint = os.getenv('GRAPHCMS_ENDPOINT', 'http://localhost')
+    token = os.getenv('GRAPHCMS_TOKEN', 'my-token')
+    G = GraphcmsManager(endpoint=endpoint, token=token)
+    status_code, payload = G.query()
+    if status_code != 200:
+        print(payload)
         return
-    # フロントマターのメタ情報設定
-    front_matter_map = {
-        'title': f'"{args.title}"',
-        'date': now.strftime('%Y-%m-%dT%H:%M:%S+09:00'),
-    }
-    # カバー写真の処理
-    if args.image:
-        front_matter_map.update({"featured_image": f'"{args.image}"'})
-    # タグの処理
-    if args.tags:
-        front_matter_map.update({"tags": str(args.tags.split(','))})
-    # 出力内容の生成
-    output = '---\n'
-    for k, v in front_matter_map.items():
-        output += f'{k}: {v}\n'
-    output += '---\n\n<!--more-->\n'
-    # ファイルへの書き込み
-    with open(filepath, 'w') as f:
-        f.write(output)
+    data = G.gen_hugo_contents(payload)
+    G.write(data)
 
-    print(f'create {filepath}')
 
 if __name__ == "__main__":
     main()
-##### __main__.py ends here
