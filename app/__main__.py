@@ -70,7 +70,7 @@ class GraphcmsManager(object):
             for x in content_list:
                 data_map = dict()
                 front_matter = f'title: "{x["title"]}"\n'
-                front_matter = f'slug: "{x["slug"]}"\n'
+                front_matter += f'slug: "{x["slug"]}"\n'
                 front_matter += f'date: {x["date"]}\n'
                 eyecatch = x.get('eyecatch')
                 if eyecatch:
