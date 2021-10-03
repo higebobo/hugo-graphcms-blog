@@ -40,8 +40,9 @@ jobs:
       - name: Build
         env:
           GRAPHCMS_ENDPOINT: ${{ secrets.GRAPHCMS_ENDPOINT }}
-          GRAPHCMS_TOKEN: ${{ secrets .GRAPHCMS_TOKEN}}
-        run: python -m app && hugo --minify
+          GRAPHCMS_TOKEN: ${{ secrets.GRAPHCMS_TOKEN }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+        run: python -m app && hugo --minify --baseUrl="${BASE_URL}"
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
