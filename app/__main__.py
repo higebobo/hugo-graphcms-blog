@@ -83,8 +83,8 @@ class GraphcmsManager(object):
                 for x in content.get('localizations'):
                     data_map = dict()
                     locale = x['locale']
-                    if locale == x.get('validLocale'):
-                        print(f'Pass language code {locale} for content {x["id"]}')
+                    if locale == x.get('invalidLocale'):
+                        print(f'Skip language code {locale} for content {x["id"]}')
                         continue
                     front_matter = f'title: "{x["title"]}"\n'
                     front_matter += f'slug: "{x["slug"]}"\n'
