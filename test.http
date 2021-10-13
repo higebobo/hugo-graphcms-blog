@@ -1,4 +1,4 @@
-### Update
+### Github
 POST https://api.github.com/repos/{{$dotenv GITHUB_ACCOUNT}}/{{$dotenv GITHUB_REPO}}/dispatches
 Accept: application/vnd.github.v3+json
 Authorization: token {{$dotenv GITHUB_TOKEN}}

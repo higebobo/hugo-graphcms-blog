@@ -37,10 +37,17 @@ fetch: ## Fetch content from Headless CMS
 sample: ## Sample application
 	@python -m app.sample
 
-curl: ## Curl test
+curl-graphcms: ## WEB-API test for GraphCMS by curl
 	curl -X POST ${GRAPHCMS_ENDPOINT} \
 	-H "Authorization: Bearer ${GRAPHCMS_TOKEN}" \
 	-d '{"query":"{posts {id title slug date eyecatch {url} body tag}}"}'
+
+curl-github:  ## WEB-API test for GraphCMS by curl
+	curl -X POST \
+	-H "Accept: application/vnd.github.v3+json" \
+	-H "Authorization: token ${GITHUB_TOKEN}" \
+	-d '{"event_type":"webhook test by curl"}' \
+	"https://api.github.com/repos/${GITHUB_ACCOUNT}/${GITHUB_REPO}/dispatches"
 
 help: ## Print this help
 	@echo 'Usage: make [target]'

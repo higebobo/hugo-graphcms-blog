@@ -1,4 +1,5 @@
 # -*- mode: python -*- -*- coding: utf-8 -*-
+import datetime
 import json
 import os
 import pathlib
@@ -9,7 +10,9 @@ from dotenv import load_dotenv
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
 PROJECT_DIR = pathlib.Path(APP_DIR).parent
-HUGO_CONTENT_DIR = os.path.join(PROJECT_DIR, 'content', 'post')
+HUGO_CONTENT_DIR = os.path.join(PROJECT_DIR, 'content')
+HUGO_POST_DIRNAME = 'post'
+UPDATE_SEC = int(os.getenv('UPDATE_SEC', '300'))
 
 dotenv_path = os.path.join(PROJECT_DIR, '.env')
 load_dotenv(dotenv_path)
@@ -27,16 +30,21 @@ class GraphcmsManager(object):
     def __query_statement(self):
         return '''\
         {
-          posts {
-            id
-            title
-            slug
-            date
-            eyecatch {
-              url
+          posts(locales: [ja, en], orderBy: updatedAt_DESC) {
+            localizations(includeCurrent: true) {
+              id
+              title
+              slug
+              date
+              eyecatch {
+                url
+              }
+              body
+              tag
+              locale
+              invalidLocale
+              updatedAt
             }
-            body
-            tag
           }
         }'''
 
@@ -62,34 +70,51 @@ class GraphcmsManager(object):
             payload = {'error': str(e)}
         return status_code, payload
 
+    def __time_diff(self, date_str, fmt='%Y-%m-%dT%H:%M:%S.%f+00:00'):
+        updatetime = datetime.datetime.strptime(date_str, fmt)
+        return (datetime.datetime.now() - datetime.timedelta(hours=9) - updatetime).seconds
+
     def gen_hugo_contents(self, payload):
         result = list()
 
         data = (payload.get('data'))
         for model, content_list in data.items():
-            for x in content_list:
-                data_map = dict()
-                front_matter = f'title: "{x["title"]}"\n'
-                front_matter += f'slug: "{x["slug"]}"\n'
-                front_matter += f'date: {x["date"]}\n'
-                eyecatch = x.get('eyecatch')
-                if eyecatch:
-                    front_matter += f'featured_image: {eyecatch["url"]}\n'
-                tag = x.get('tag')
-                if tag:
-                    front_matter += f'tags: {str(tag)}\n'
+            for content in content_list:
+                for x in content.get('localizations'):
+                    data_map = dict()
+                    locale = x['locale']
+                    if locale == x.get('validLocale')
+                        print(f'Pass language code {locale} for content {x["id"]}')
+                        continue
+                    front_matter = f'title: "{x["title"]}"\n'
+                    front_matter += f'slug: "{x["slug"]}"\n'
+                    front_matter += f'date: {x["date"]}\n'
+                    eyecatch = x.get('eyecatch')
+                    if eyecatch:
+                        front_matter += f'featured_image: {eyecatch["url"]}\n'
+                    tag = x.get('tag')
+                    if tag:
+                        front_matter += f'tags: {str(tag)}\n'
 
-                data_map['front_matter'] = front_matter
-                data_map['body'] = x['body']
-                data_map['filepath'] = f'{x["id"]}.md'
+                    data_map['front_matter'] = front_matter
+                    data_map['body'] = x['body']
+                    data_map['filepath'] = f'{x["id"]}.md'
+                    data_map['update_sec'] = self.__time_diff(x['updatedAt'])
+                    data_map['locale'] = locale
 
-                result.append(data_map)
+                    result.append(data_map)
+
         return result
 
-    def write(self, data):
+    def write(self, data, update_sec=UPDATE_SEC):
         for x in data:
-            fullpath = os.path.join(HUGO_CONTENT_DIR, x['filepath'])
+            fullpath = os.path.join(HUGO_CONTENT_DIR, x['locale'],
+                                    HUGO_POST_DIRNAME,  x['filepath'])
             os.makedirs(os.path.dirname(fullpath), exist_ok=True)
+
+            if os.path.exists(fullpath) and x["update_sec"] > update_sec:
+                # skip old posts
+                continue
 
             with open(fullpath, 'w') as f:
                 text = f'---\n{x["front_matter"]}---\n{x["body"]}'

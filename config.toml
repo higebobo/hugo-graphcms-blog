@@ -12,15 +12,14 @@ googleAnalytics = ""
 enableRobotsTXT = true
 
 [languages]
-  #[languages.en]
-  #  title = "My blog"
-  #  weight = 2
-  #  contentDir = "content/en"
+  [languages.en]
+    title = "My blog"
+    weight = 2
+    contentDir = "content/en"
   [languages.ja]
     title = "私のブログ"
     weight = 1
-    #contentDir = "content/ja"
-    contentDir = "content"
+    contentDir = "content/ja"
 
 [sitemap]
   changefreq = "monthly"

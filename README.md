@@ -1,10 +1,10 @@
 # hugo-grapchms-blog
 
-
 ## Set up
 
 * requirements
     * Hugo
+    * Python
 
 ### By clone
 
