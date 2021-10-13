@@ -13,11 +13,11 @@ enableRobotsTXT = true
 
 [languages]
   [languages.en]
-    title = "My blog"
+    title = "Hugo GraphCMS Blog"
     weight = 2
     contentDir = "content/en"
   [languages.ja]
-    title = "私のブログ"
+    title = "Hugo GraphCMS Blog"
     weight = 1
     contentDir = "content/ja"
 
