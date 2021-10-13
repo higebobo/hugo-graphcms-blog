@@ -1,5 +1,5 @@
 ---
-title: "My Blog"
+title: "Blog posts"
 date: 2021-09-24T09:18:44+09:00
 ---
-Welcome my blog.
+My posts list.
