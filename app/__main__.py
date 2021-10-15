@@ -25,7 +25,7 @@ class GraphcmsManager(object):
 
     def __format_query(self, s):
         s = re.sub(r'\s+', '' ' ', s).replace('\n', ' ')
-        return {'query': f'{s}'}
+        return {'query': s}
 
     def __query_statement(self):
         return '''\
